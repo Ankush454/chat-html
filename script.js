@@ -14,7 +14,8 @@ from_user = getParamValue("from_user");
 to_user = getParamValue("to_user");
 
 console.log(from_user, to_user);
-
+var flag = true;
+var last_id;
 if(from_user && to_user){
     var me = {};
     me.avatar = "https://lh6.googleusercontent.com/-lr2nyjhhjXw/AAAAAAAAAAI/AAAAAAAARmE/MdtfUmC0M4s/photo.jpg?sz=48";
@@ -22,26 +23,51 @@ if(from_user && to_user){
     var you = {};
     you.avatar = "https://a11.t26.net/taringa/avatares/9/1/2/F/7/8/Demon_King1/48x48_5C5.jpg";
 
-    setTimeout(
-        function(){        
-        console.log(from_user, "from here");                
-           $.ajax({
+    load_chat();
+
+}
+
+
+function load_chat(){        
+    console.log(from_user, "from here");                
+       if(flag){
+        $.ajax({
               url: "http://chatapp.regularuse.com/chat/api/?to_user="+to_user+"&from_user="+from_user+"",
               crossDomain: true,
               cache: false,
               success: function(data){
                 for(var i=0;i<data["message"].length;i++){
                     console.log(data["message"][i]["from_user"]);
+                    last_id = Number(data["message"][i]["id"])
                     insertChat(data["message"][i]["from_user"], data["message"][i]["message"], 1500, data["message"][i]["created"]);    
                 }
               }
+            }); 
+        flag=false;
+       }
+       else{
+        $.ajax({
+              url: "http://chatapp.regularuse.com/chat/api/?to_user="+to_user+"&from_user="+from_user+"",
+              crossDomain: true,
+              cache: false,
+              success: function(data){
+                for(var i=0;i<data["message"].length;i++){
+                    console.log(data["message"][i]["from_user"]);
+                    id = Number(data["message"][i]["id"])
+                    if(last_id<id){
+                        last_id=id;
+                        insertChat(data["message"][i]["from_user"], data["message"][i]["message"], 1500, data["message"][i]["created"]);    
+                    }
+                    else{
+                        continue;
+                    }
+                    
+                }
+              }
             });
-        }, 3000);
-
-
-
-}
-
+       }
+       
+   }
 
 function formatAMPM(date) {
     var hours = date.getHours();
@@ -104,6 +130,7 @@ $(".mytext").on("keydown", function(e){
               data: {"from_user" : from_user, "to_user":to_user, "message":text},
               success: function(data){
                     date = new Date();
+                    last_id = Number(data["id"])
                     insertChat(from_user, text, 0, date.toString());
                     }
             });
@@ -114,4 +141,10 @@ $(".mytext").on("keydown", function(e){
 
 //-- Clear Chat
 resetChat();
+window.setInterval(function(){
+    if(from_user && to_user){
+      load_chat();
+    }
+}, 9000);
+
 
